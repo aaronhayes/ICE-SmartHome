@@ -11,10 +11,20 @@ import csse4004.EnergySensorPrxHelper;
  */
 public class EnergySensor extends SensorAbstract {
 
+	/**
+	 * Constructor for Energy Sensor
+	 * @param dataFile String of datafile location
+	 * @throws FileNotFoundException
+	 */
 	public EnergySensor(String dataFile) throws FileNotFoundException {
 		super(dataFile);
 	}
 
+	/**
+	 * ICE main function
+	 *  - Get Publisher on the energy topic
+	 *  - Publish energy reading every second
+	 */
 	@Override
 	public int run(String[] args) {
 		Ice.ObjectPrx publisher = getPublisher("energy");
@@ -24,7 +34,7 @@ public class EnergySensor extends SensorAbstract {
 		
 		while (true) {
 			try {
-				String[] data = readData(true).split(",");
+				String[] data = readData().split(",");
 				int value = Integer.parseInt(data[0]);
 				int time = Integer.parseInt(data[1]);
 				for (int i = 0; i <= time; i++) {

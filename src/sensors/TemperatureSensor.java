@@ -12,10 +12,22 @@ import csse4004.TempSensorWarningPrxHelper;
  * Temperature Sensor
  */
 public class TemperatureSensor extends SensorAbstract {
+	
+	/**
+	 * Constructor for Temperature Sensor
+	 * @param dataFile String of datafile location
+	 * @throws FileNotFoundException
+	 */
 	public TemperatureSensor(String dataFile) throws FileNotFoundException {
 		super(dataFile);
 	}
 	
+	/**
+	 * ICE main function
+	 *  - Get Publisher on the temperature log and temperature alert topics
+	 *  - Publish log reading every second
+	 *  - Publish alert messages if required.
+	 */
 	@Override
 	public int run(String[] args) {
 		Ice.ObjectPrx publisher  = getPublisher("temperatureLog");
@@ -29,7 +41,7 @@ public class TemperatureSensor extends SensorAbstract {
 		
 		while (true) {
 			try {
-				String[] data = readData(true).split(",");
+				String[] data = readData().split(",");
 				int value = Integer.parseInt(data[0]);
 				int time = Integer.parseInt(data[1]);
 				for (int i = 0; i <= time; i++) {

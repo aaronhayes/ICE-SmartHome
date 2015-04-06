@@ -6,6 +6,7 @@
 SmartHouse.TempSensor.Endpoints=tcp:udp
 SmartHouse.TempSensorWarning.Endpoints=tcp:udp
 SmartHouse.EnergySensor.Endpoints=tcp:udp
+SmartHouse.LocationSensor.Endpoints=tcp:udp
 
 #
 # This property is used by the clients to connect to IceStorm.

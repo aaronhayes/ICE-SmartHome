@@ -1,1 +1,1 @@
-db folder is required for ICESTorm settings.
+db folder is required for ICEStorm settings

@@ -30,7 +30,7 @@ module csse4004 {
 	};
 	
 	interface LocationSensor {
-		void logLocation(string name, string Location);
+		void logLocation(string name, string location);
 	};
 	
 };

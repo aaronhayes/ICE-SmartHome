@@ -43,15 +43,12 @@ public abstract class SensorAbstract extends Ice.Application {
 	
 	/**
 	 * Read data from predefined data file.
-	 * 
-	 * @param repeat boolean to indicate if the file should return
-	 * 	to the beginning once EOF is reached.
 	 * @return Next line from the file.
 	 * @throws IOException
 	 */
-	protected String readData(boolean repeat) throws IOException {
+	protected String readData() throws IOException {
 		String line = getLine();
-		if (line == null && repeat == true) {
+		if (line == null) {
 			this.file.seek(0);
 			line = getLine();
 		}

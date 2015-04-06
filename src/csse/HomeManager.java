@@ -11,6 +11,7 @@ import csse4004.UIPrx;
 import csse4004.UIPrxHelper;
 import csse4004._EnergySensorDisp;
 import csse4004._HMDisp;
+import csse4004._LocationSensorDisp;
 import csse4004._TempSensorDisp;
 import csse4004._TempSensorWarningDisp;
 
@@ -23,8 +24,21 @@ public class HomeManager extends Ice.Application {
 	
 	private int temperature;
 	private boolean logSet = false;
-	
 	private int energy;
+	private HashMap<String, String> userLocations = new HashMap<String, String>();
+	
+	/**
+	 * Location Sensor ICEStorm Subscriber Class
+	 *
+	 */
+	@SuppressWarnings("serial")
+	public class LocationSensorI extends _LocationSensorDisp {
+
+		@Override
+		public void logLocation(String name, String location, Current __current) {
+			userLocations.put(name, location);
+		}
+	}
 	
 	/**
 	 * Temperature Sensor ICEStorm Subscriber Class
@@ -37,7 +51,6 @@ public class HomeManager extends Ice.Application {
 			logSet = true;
 			temperature = value;
 		}
-		
 	}
 	
 	/**
@@ -64,6 +77,12 @@ public class HomeManager extends Ice.Application {
 			this.ui = uiPrx;
 		}
 
+		/**
+		 * Received an energy usage, alert the UI if value is different 
+		 * 	and above the 4000W limit.
+		 * 	Check for connection refused exception in case socket broken.
+		 * @param value Current Energy Usage Value
+		 */
 		@Override
 		public void energyAlert(int value, Current __current) {
 			if (energy != value && value > 4000) {
@@ -184,7 +203,6 @@ public class HomeManager extends Ice.Application {
 						+ " was not found in the media collection"; 
 			}
 		}
-		
 	}
 	
 	/**
@@ -287,6 +305,7 @@ public class HomeManager extends Ice.Application {
 		IceStorm.TopicPrx tempLogTopic = getIceStormTopic("temperatureLog");
 		IceStorm.TopicPrx tempAlertTopic = getIceStormTopic("temperatureAlert");
 		IceStorm.TopicPrx energyTopic = getIceStormTopic("energy");
+		IceStorm.TopicPrx locationTopic = getIceStormTopic("location");
 		
 		Ice.ObjectPrx tempLogSubscriber = getIceStormSubscriber(tempLogTopic, 
 				"SmartHouse.TempSensor", new TempSensorI());
@@ -297,7 +316,8 @@ public class HomeManager extends Ice.Application {
 		Ice.ObjectPrx energySubscriber = getIceStormSubscriber(energyTopic, 
 				"SmartHouse.EnergySensor", new EnergySensorI(uiPrx));
 		
-
+		Ice.ObjectPrx locationSubscriber = getIceStormSubscriber(locationTopic, 
+				"SmartHouse.LocationSensor", new LocationSensorI());
 		
 		Ice.ObjectAdapter uiListener = communicator()
 				.createObjectAdapterWithEndpoints("HM", "tcp -h 127.0.0.1 -p 12001");
@@ -311,6 +331,7 @@ public class HomeManager extends Ice.Application {
 		tempLogTopic.unsubscribe(tempLogSubscriber);
 		tempAlertTopic.unsubscribe(tempAlertSubscriber);
 		energyTopic.unsubscribe(energySubscriber);
+		locationTopic.unsubscribe(locationSubscriber);
 		
 		return 0;
 	}
