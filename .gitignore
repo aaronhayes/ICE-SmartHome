@@ -3,3 +3,4 @@ generated/*
 .classpath
 bin/*
 .settings
+db/*

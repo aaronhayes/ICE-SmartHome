@@ -8,6 +8,7 @@ module csse4004 {
 	};
 	
 	interface HM {
+		void registerUser(string username, int port);
 		string viewLog(string eol);
 		string viewMediaFiles(string eol);
 		string viewDiscTracks(string discTitle, string eol);

@@ -23,7 +23,8 @@ import csse4004._TempSensorWarningDisp;
  */
 public class HomeManager extends Ice.Application {
     private final String PROXY = "TopicManager.Proxy";
-
+    
+    private int activeUsers = 0;
     private int temperature;
     private boolean logSet = false;
     private int energy;
@@ -128,10 +129,16 @@ public class HomeManager extends Ice.Application {
         }
 
         /**
-         * Shutdown request from User. Send Shutdown notice to sensors/emm.
+         * Shutdown request from User. 
+         * Send Shutdown notice to sensors/emm.
+         * 
          */
         @Override
         public void shutdown(Current __current) {
+            if (--activeUsers > 0) {
+                return;
+            }
+            
             try {
                 this.emmPrx.shutdown();
             } catch (Ice.ConnectionRefusedException e) {
@@ -199,8 +206,8 @@ public class HomeManager extends Ice.Application {
         }
 
         /**
-         * viewDiscTracks Request from User. Get information about tracks on the
-         * disc.
+         * viewDiscTracks Request from User. 
+         *  Get information about tracks on the disc.
          * 
          * @param eol
          *            String end of line Character of User Interface System.
@@ -223,6 +230,19 @@ public class HomeManager extends Ice.Application {
                 return "The disc " + discTitle
                         + " was not found in the media collection";
             }
+        }
+
+        /**
+         * Register a user as a UI instance. Can support a maximum of 2 users.
+         * 
+         * @param username
+         *            Name of the user
+         * @param port
+         *            port number user is using
+         */
+        @Override
+        public void registerUser(String username, int port, Current __current) {
+            activeUsers++;
         }
     }
 
@@ -257,9 +277,11 @@ public class HomeManager extends Ice.Application {
     }
 
     /**
-     * Get ICEStorm Subscriber. Using ice_oneway communications. - Create
-     * Adapter - Generate random ID for subscriber. - Active Adapter - Subscribe
-     * and Get Publisher for Topic.
+     * Get ICEStorm Subscriber. Using ice_oneway communications. 
+     * - Create Adapter 
+     * - Generate random ID for subscriber. 
+     * - Active Adapter 
+     * - Subscribe and Get Publisher for Topic.
      * 
      * @param topic
      *            IceStorm Topic Prx
@@ -341,8 +363,9 @@ public class HomeManager extends Ice.Application {
         IceStorm.TopicPrx energyTopic = getIceStormTopic("energy");
         IceStorm.TopicPrx locationTopic = getIceStormTopic("location");
 
-        Ice.ObjectPrx shutdownPublisher = shutdownTopic.getPublisher().ice_oneway();
-        
+        Ice.ObjectPrx shutdownPublisher = shutdownTopic.getPublisher()
+                .ice_oneway();
+
         this.shutdownPrx = ShutdownPrxHelper.uncheckedCast(shutdownPublisher);
 
         Ice.ObjectPrx tempLogSubscriber = getIceStormSubscriber(tempLogTopic,
@@ -368,6 +391,7 @@ public class HomeManager extends Ice.Application {
         shutdownOnInterrupt();
         communicator().waitForShutdown();
 
+        // Unsubscribe from topics
         tempLogTopic.unsubscribe(tempLogSubscriber);
         tempAlertTopic.unsubscribe(tempAlertSubscriber);
         energyTopic.unsubscribe(energySubscriber);

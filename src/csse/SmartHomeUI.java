@@ -38,14 +38,26 @@ public class SmartHomeUI extends Ice.Application {
         }
     }
 
-    private String userName;
     private final static String EOL = System.getProperty("line.separator");
 
     /**
-     * SmartHomeUI Class Constructor Handle user input from standard in. Prints
-     * welcome message.
+     * SmartHomeUI Class Constructor.
      */
     public SmartHomeUI() {
+
+    }
+
+    /**
+     * Prints welcome message. Sends user name and port to HM.
+     * 
+     * @param hmPrx
+     *            HomeManagerPrx Ice Object for RPC/RMI communications.
+     * @param port
+     *            int of the port the UI is running on
+     * @throws IOException
+     */
+    private static void welcomeMessage(HMPrx hmPrx, int port)
+            throws IOException {
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
 
         System.out.println("Welcome to the Smart Home Monitoring System");
@@ -53,7 +65,8 @@ public class SmartHomeUI extends Ice.Application {
         System.out.flush();
 
         try {
-            this.userName = in.readLine().trim();
+            String userName = in.readLine().trim();
+            hmPrx.registerUser(userName, port);
         } catch (IOException e) {
             System.exit(1);
         }
@@ -125,8 +138,8 @@ public class SmartHomeUI extends Ice.Application {
     }
 
     /**
-     * Make RPC/RMI call to HomeManger to view Media Files. 
-     * Print results to console.
+     * Make RPC/RMI call to HomeManger to view Media Files. Print results to
+     * console.
      * 
      * @param hmPrx
      *            HomeManagerPrx Ice Object for RPC/RMI communications.
@@ -200,14 +213,17 @@ public class SmartHomeUI extends Ice.Application {
     public int run(String[] args) {
 
         Ice.ObjectAdapter hmListener;
+        int port;
 
         try {
             hmListener = communicator().createObjectAdapterWithEndpoints("UI",
                     "tcp -h 127.0.0.1 -p 12003");
+            port = 12003;
         } catch (Exception e) {
             try {
                 hmListener = communicator().createObjectAdapterWithEndpoints(
                         "UI", "tcp -h 127.0.0.1 -p 12004");
+                port = 12004;
             } catch (Exception ex) {
                 communicator().destroy();
                 System.err.println("Too many User Interface instances");
@@ -225,6 +241,7 @@ public class SmartHomeUI extends Ice.Application {
         shutdownOnInterrupt();
 
         try {
+            welcomeMessage(hmPrx, port);
             menu(hmPrx);
         } catch (IOException e) {
             e.printStackTrace();
