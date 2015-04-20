@@ -6,6 +6,7 @@ module csse4004 {
     	string getFiles();
     	void shutdown();
 	};
+	
 	interface HM {
 		string viewLog(string eol);
 		string viewMediaFiles(string eol);
@@ -33,4 +34,7 @@ module csse4004 {
 		void logLocation(string name, string location);
 	};
 	
+	interface Shutdown {
+		void shutdownRequest();
+	};
 };

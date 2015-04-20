@@ -30,23 +30,30 @@ public class TemperatureSensor extends SensorAbstract {
 	 */
 	@Override
 	public int run(String[] args) {
-		Ice.ObjectPrx publisher  = getPublisher("temperatureLog");
-		Ice.ObjectPrx alertPublisher = getPublisher("temperatureAlert");
+		IceStorm.TopicPrx shutdown = getShutdownTopic();
+		Ice.ObjectPrx shutdownObjPrx = getIceStormShutdownSubscriber(shutdown);
 		
-		TempSensorPrx tempSensor = TempSensorPrxHelper
-				.uncheckedCast(publisher);
+		IceStorm.TopicPrx log = getTopic("temperatureLog");
+		IceStorm.TopicPrx alert = getTopic("temperatureAlert");
 		
+		Ice.ObjectPrx publisher  = log.getPublisher().ice_oneway();
+		Ice.ObjectPrx alertPublisher = alert.getPublisher().ice_oneway();
+		
+		TempSensorPrx tempSensor = TempSensorPrxHelper.uncheckedCast(publisher);
 		TempSensorWarningPrx tempSensorWarning = TempSensorWarningPrxHelper
 				.uncheckedCast(alertPublisher);
 		
-		while (true) {
+		while (!communicator().isShutdown()) {
 			try {
 				String[] data = readData().split(",");
 				int value = Integer.parseInt(data[0]);
 				int time = Integer.parseInt(data[1]);
 				for (int i = 0; i <= time; i++) {
+					if (communicator().isShutdown()) {
+						break;
+					}
 					tempSensor.logData(value);
-					if (value == 0) {
+					if (value < 15 || value > 28) {
 						tempSensorWarning.temperatureAlert(value);
 					}
 					Thread.sleep(1000);
@@ -60,7 +67,12 @@ public class TemperatureSensor extends SensorAbstract {
 			}
 		}
 
+
+		shutdown.unsubscribe(shutdownObjPrx);
+		log.destroy();
+		alert.destroy();
+		
+		communicator().destroy();
 		return 0;
 	}
-
 }

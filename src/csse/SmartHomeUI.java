@@ -185,8 +185,23 @@ public class SmartHomeUI extends Ice.Application {
 	 */
 	@Override
 	public int run(String[] args) {
-		Ice.ObjectAdapter hmListener = communicator()
-				.createObjectAdapterWithEndpoints("UI", "tcp -h 127.0.0.1 -p 12003");
+		
+		Ice.ObjectAdapter hmListener;
+		
+		try {
+			hmListener = communicator()
+					.createObjectAdapterWithEndpoints("UI", "tcp -h 127.0.0.1 -p 12003");
+		} catch (Exception e) {
+			try {
+				hmListener = communicator()
+						.createObjectAdapterWithEndpoints("UI", "tcp -h 127.0.0.1 -p 12004");
+			} catch (Exception ex) {
+				communicator().destroy();
+				System.err.println("Too many User Interface instances");
+				return 1;
+			}
+		}
+				
 		
 		hmListener.add(new UII(), communicator().stringToIdentity("ui"));
 		hmListener.activate();
@@ -203,8 +218,7 @@ public class SmartHomeUI extends Ice.Application {
 			return 1;
 		}
 		
-		communicator().shutdown();
-		
+		communicator().destroy();
 		return 0;
 	}
 }

@@ -30,16 +30,22 @@ public class LocationSensor extends SensorAbstract {
 	 */
 	@Override
 	public int run(String[] args) {
-		Ice.ObjectPrx publisher = getPublisher("location");
+		IceStorm.TopicPrx shutdown = getShutdownTopic();
+		Ice.ObjectPrx shutdownObjPrx = getIceStormShutdownSubscriber(shutdown);
 		
+		IceStorm.TopicPrx topic = getTopic("location");
+		Ice.ObjectPrx publisher = topic.getPublisher().ice_oneway();
 		LocationSensorPrx location = LocationSensorPrxHelper.uncheckedCast(publisher);
 		
-		while (true) {
+		while (!communicator().isShutdown()) {
 			try {
 				String[] data = readData().split(",");
 				String value = data[0];
 				int time = Integer.parseInt(data[1]);
 				for (int i = 0; i <= time; i++) {
+					if (communicator().isShutdown()) {
+						break;
+					}
 					location.logLocation(user, value);
 					Thread.sleep(1000);
 				}
@@ -51,6 +57,10 @@ public class LocationSensor extends SensorAbstract {
 			}
 		}
 		
+		topic.destroy();
+		shutdown.unsubscribe(shutdownObjPrx);
+		
+		communicator().destroy();
 		return 0;
 	}
 

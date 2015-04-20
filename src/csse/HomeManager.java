@@ -7,6 +7,8 @@ import Ice.ObjectPrx;
 import IceStorm.BadQoS;
 import csse4004.EMMPrx;
 import csse4004.EMMPrxHelper;
+import csse4004.ShutdownPrx;
+import csse4004.ShutdownPrxHelper;
 import csse4004.UIPrx;
 import csse4004.UIPrxHelper;
 import csse4004._EnergySensorDisp;
@@ -26,6 +28,7 @@ public class HomeManager extends Ice.Application {
 	private boolean logSet = false;
 	private int energy;
 	private HashMap<String, String> userLocations = new HashMap<String, String>();
+	private ShutdownPrx shutdownPrx;
 	
 	/**
 	 * Location Sensor ICEStorm Subscriber Class
@@ -70,11 +73,13 @@ public class HomeManager extends Ice.Application {
 	 */
 	@SuppressWarnings("serial")
 	public class EnergySensorI extends _EnergySensorDisp {
-		private UIPrx ui;
+		private UIPrx user1;
+		private UIPrx user2;
 		
-		public EnergySensorI(UIPrx uiPrx) {
+		public EnergySensorI(UIPrx uiPrx, UIPrx uiPrx2) {
 			super();
-			this.ui = uiPrx;
+			this.user1 = uiPrx;
+			this.user2 = uiPrx2;
 		}
 
 		/**
@@ -87,10 +92,15 @@ public class HomeManager extends Ice.Application {
 		public void energyAlert(int value, Current __current) {
 			if (energy != value && value > 4000) {
 				try {
-					ui.highEnergyWarning(value);
+					user1.highEnergyWarning(value);
 				} catch (Ice.ConnectionRefusedException e) {
 					// Ignore
-				}	
+				}
+				try {
+					user2.highEnergyWarning(value);
+				} catch (Ice.ConnectionRefusedException e) {
+					// Ignore
+				}
 			}
 			energy = value;
 		}
@@ -124,6 +134,7 @@ public class HomeManager extends Ice.Application {
 			} catch (Ice.ConnectionRefusedException e) {
 				// Ignore
 			}
+			shutdownPrx.shutdownRequest();
 			communicator().shutdown();
 		}
 
@@ -252,9 +263,7 @@ public class HomeManager extends Ice.Application {
 		id.name = java.util.UUID.randomUUID().toString();
 		
 		ObjectPrx subscriber = adapter.add(iceObject, id);
-		
 		adapter.activate();
-		
 		subscriber.ice_oneway();
 		
 		try {
@@ -301,11 +310,17 @@ public class HomeManager extends Ice.Application {
 		Ice.ObjectPrx uiObj = communicator().stringToProxy("ui:tcp -h 127.0.0.1 -p 12003");
 		UIPrx uiPrx = UIPrxHelper.uncheckedCast(uiObj);
 		
+		Ice.ObjectPrx uiObj2 = communicator().stringToProxy("ui:tcp -h 127.0.0.1 -p 12004");
+		UIPrx uiPrx2 = UIPrxHelper.uncheckedCast(uiObj2);
 		
+		IceStorm.TopicPrx shutdownTopic = getIceStormTopic("shutdown");
 		IceStorm.TopicPrx tempLogTopic = getIceStormTopic("temperatureLog");
 		IceStorm.TopicPrx tempAlertTopic = getIceStormTopic("temperatureAlert");
 		IceStorm.TopicPrx energyTopic = getIceStormTopic("energy");
 		IceStorm.TopicPrx locationTopic = getIceStormTopic("location");
+		
+		Ice.ObjectPrx shutdownPublisher = shutdownTopic.getPublisher().ice_oneway();
+		this.shutdownPrx = ShutdownPrxHelper.uncheckedCast(shutdownPublisher);
 		
 		Ice.ObjectPrx tempLogSubscriber = getIceStormSubscriber(tempLogTopic, 
 				"SmartHouse.TempSensor", new TempSensorI());
@@ -314,7 +329,7 @@ public class HomeManager extends Ice.Application {
 				"SmartHouse.TempSensorWarning", new TempSensorWarningI());
 		
 		Ice.ObjectPrx energySubscriber = getIceStormSubscriber(energyTopic, 
-				"SmartHouse.EnergySensor", new EnergySensorI(uiPrx));
+				"SmartHouse.EnergySensor", new EnergySensorI(uiPrx, uiPrx2));
 		
 		Ice.ObjectPrx locationSubscriber = getIceStormSubscriber(locationTopic, 
 				"SmartHouse.LocationSensor", new LocationSensorI());
@@ -333,7 +348,15 @@ public class HomeManager extends Ice.Application {
 		energyTopic.unsubscribe(energySubscriber);
 		locationTopic.unsubscribe(locationSubscriber);
 		
+		// Give Sensors a chance to shutdown
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
+		shutdownTopic.destroy();		
+		communicator().destroy();
 		return 0;
 	}
-	
 }

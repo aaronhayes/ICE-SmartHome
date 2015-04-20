@@ -8,15 +8,14 @@ import sensors.LocationSensor;
 import sensors.TemperatureSensor;
 
 /**
- * 
- *
+ * Entry point to run Sensors for SmartHome
  */
 public class Sensor {
 	private static final String TYPES[] = {"temperature", "energy", "location"};
 	
 	/**
-	 * 
-	 * @param args
+	 * Constructor of a Sensor
+	 * @param args command line arguments
 	 * @throws FileNotFoundException
 	 */
 	public Sensor(String[] args) throws FileNotFoundException {
@@ -37,8 +36,8 @@ public class Sensor {
 	}
 	
 	/**
-	 * 
-	 * @param args
+	 * Entry point to sensors
+	 * @param args command line arguments
 	 */
 	public static void main(String[] args) {
 		if (args.length != 2) {

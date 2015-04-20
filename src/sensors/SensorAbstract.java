@@ -3,8 +3,13 @@ package sensors;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.HashMap;
 
+import Ice.Current;
+import Ice.ObjectPrx;
+import IceStorm.BadQoS;
 import IceStorm.TopicExists;
+import csse4004._ShutdownDisp;
 
 /**
  * Abstract for sensors
@@ -57,11 +62,11 @@ public abstract class SensorAbstract extends Ice.Application {
 	}
 	
 	/**
-	 * Get the Ice.ObjectPrx for the publisher of a topic.
+	 * Get the IceStorm.TopcPrx object of a topic.
 	 * @param topicName String of the topic to publish
-	 * @return Ice.ObjectPrx publisher.
+	 * @return IceStorm.TopicPrx topic publisher.
 	 */
-	protected Ice.ObjectPrx getPublisher(String topicName) {
+	protected IceStorm.TopicPrx getTopic(String topicName) {
 		IceStorm.TopicManagerPrx manager = IceStorm.TopicManagerPrxHelper
 				.checkedCast(communicator().propertyToProxy(PROXY));
 		
@@ -83,6 +88,56 @@ public abstract class SensorAbstract extends Ice.Application {
 			}
 		}
 		
-		return topic.getPublisher().ice_oneway();
+		return topic;
+	}
+	
+	/**
+	 * Get Shutdown Topic from ICEStorm
+	 * @return IceStorm Shutdown TopicPrx
+	 */
+	protected IceStorm.TopicPrx getShutdownTopic() {
+		return getTopic("shutdown");
+	}
+	
+	/**
+	 * Get ICEStorm Subscriber. Using ice_oneway communications.
+	 * 	- Create Adapter
+	 * 	- Generate random ID for subscriber.
+	 * 	- Active Adapter
+	 * 	- Subscribe and Get Publisher for Shutdown Topic.
+	 * @param topic ICEStorm topic Prx
+	 * @return ICEStorm Subscriber of Shutdown Topic
+	 */
+	protected Ice.ObjectPrx getIceStormShutdownSubscriber(IceStorm.TopicPrx topic) {
+		Ice.ObjectAdapter adapter = communicator()
+				.createObjectAdapterWithEndpoints("SmartHouse.Shutdown", "tcp:udp");
+		
+		Ice.Identity id = new Ice.Identity(null, "");
+		id.name = java.util.UUID.randomUUID().toString();
+		
+		ObjectPrx subscriber = adapter.add(new ShutdownI(), id);
+		adapter.activate();
+		subscriber.ice_oneway();
+		
+		try {
+			topic.subscribeAndGetPublisher(new HashMap<String, String>(), subscriber);
+		} catch (IceStorm.AlreadySubscribed e) {
+			return subscriber;
+		} catch (BadQoS e) {
+			e.printStackTrace();
+		}
+		
+		return subscriber;
+	}
+	
+	/**
+	 * Shutdown ICEStorm Subscriber Class
+	 */
+	@SuppressWarnings("serial")
+	public class ShutdownI extends _ShutdownDisp {
+		@Override
+		public void shutdownRequest(Current __current) {
+			communicator().shutdown();
+		}
 	}
 }

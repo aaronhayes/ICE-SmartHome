@@ -3,6 +3,7 @@
 # subscriber adapter. These endpoints are where the client receives
 # topic messages from IceStorm.
 #
+SmartHouse.Shutdown.Endpoints=tcp:udp
 SmartHouse.TempSensor.Endpoints=tcp:udp
 SmartHouse.TempSensorWarning.Endpoints=tcp:udp
 SmartHouse.EnergySensor.Endpoints=tcp:udp

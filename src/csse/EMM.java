@@ -205,6 +205,8 @@ public class EMM extends Ice.Application {
 		adapter.activate();
 		shutdownOnInterrupt();
 		communicator().waitForShutdown();
+		
+		communicator().destroy();
 		return 0;
 	}
 	

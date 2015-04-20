@@ -27,17 +27,25 @@ public class EnergySensor extends SensorAbstract {
 	 */
 	@Override
 	public int run(String[] args) {
-		Ice.ObjectPrx publisher = getPublisher("energy");
+		IceStorm.TopicPrx shutdown = getShutdownTopic();
+		Ice.ObjectPrx shutdownObjPrx = getIceStormShutdownSubscriber(shutdown);
+		
+		
+		IceStorm.TopicPrx topic = getTopic("energy");
+		Ice.ObjectPrx publisher = topic.getPublisher().ice_oneway();
 		
 		EnergySensorPrx energySensor = EnergySensorPrxHelper
 				.uncheckedCast(publisher);
 		
-		while (true) {
+		while (!communicator().isShutdown()) {
 			try {
 				String[] data = readData().split(",");
 				int value = Integer.parseInt(data[0]);
 				int time = Integer.parseInt(data[1]);
 				for (int i = 0; i <= time; i++) {
+					if (communicator().isShutdown()) {
+						break;
+					}
 					energySensor.energyAlert(value);
 					Thread.sleep(1000);
 				}
@@ -49,6 +57,9 @@ public class EnergySensor extends SensorAbstract {
 			}
 		}
 		
+		shutdown.unsubscribe(shutdownObjPrx);
+		topic.destroy();
+		communicator().destroy();
 		return 0;
 	}
 
