@@ -1,5 +1,9 @@
 package datastore;
 
+/**
+ * Data Storage of Music Data 
+ *
+ */
 public class MusicData {
     private String filename;
     private String title;

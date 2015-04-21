@@ -44,7 +44,9 @@ public class TemperatureSensor extends SensorAbstract {
         TempSensorPrx tempSensor = TempSensorPrxHelper.uncheckedCast(publisher);
         TempSensorWarningPrx tempSensorWarning = TempSensorWarningPrxHelper
                 .uncheckedCast(alertPublisher);
-
+        
+        int preValue = 22;
+        
         while (!communicator().isShutdown()) {
             try {
                 String[] data = readData().split(",");
@@ -55,8 +57,9 @@ public class TemperatureSensor extends SensorAbstract {
                         break;
                     }
                     tempSensor.logData(value);
-                    if (value < 15 || value > 28) {
+                    if ((value < 15 || value > 28) && value != preValue) {
                         tempSensorWarning.temperatureAlert(value);
+                        preValue = value;
                     }
                     Thread.sleep(1000);
                 }
