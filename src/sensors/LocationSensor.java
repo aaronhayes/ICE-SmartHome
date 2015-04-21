@@ -56,10 +56,16 @@ public class LocationSensor extends SensorAbstract {
             } catch (InterruptedException e) {
                 e.printStackTrace();
                 break;
+            } catch (Ice.ObjectNotExistException e) {
+                break;
             }
         }
 
-        topic.destroy();
+        try {
+            topic.destroy();
+        } catch (Ice.ObjectNotExistException e) {
+            // Ignore - Other location sensor destroyed it
+        }
         shutdown.unsubscribe(shutdownObjPrx);
 
         communicator().destroy();
