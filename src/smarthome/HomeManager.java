@@ -43,6 +43,8 @@ public class HomeManager extends HomeManagerAbstract {
     private Ice.ObjectPrx tempWarningSubscriber = null;
     
     private boolean adjustingTemperature = false;
+    private boolean subscribedToLog = false;
+    private boolean subscribed = false;
     
     /**
      * Get the status of home occupants. 
@@ -56,11 +58,6 @@ public class HomeManager extends HomeManagerAbstract {
      * Class for temperature adjustments to run in new Thread
      */
     public class TemperatureAdjustment extends Thread {
-        
-        public TemperatureAdjustment(int value, HashMap<String, String> users) {
-            logData.add(new AdjustmentLogData(value, users));
-        }
-        
         public void run() {
             adjustingTemperature = true;
             try {
@@ -78,6 +75,16 @@ public class HomeManager extends HomeManagerAbstract {
     @SuppressWarnings("serial")
     public class LocationSensorI extends _LocationSensorDisp {
         
+        /**
+         * Receive Log from location sensor.
+         * Subscribe to appropriate temperature locations based on locations.
+         * 
+         * @param name 
+         *          Name of occupant
+         * @param location 
+         *          Location of occupant
+         * @param __current
+         */
         @Override
         public void logLocation(String name, String location, Current __current) {
             if (adjustingTemperature) {
@@ -89,8 +96,11 @@ public class HomeManager extends HomeManagerAbstract {
             if (location.equals(loc)) {
                 return;
             }
-            
+
             if (areAllOccupantsAway()) {
+                if (!subscribedToLog && subscribed) {
+                    return;
+                }
                 // Subscribe to Warnings Only
                 tempLogTopic.unsubscribe(tempLogSubscriber);
                 
@@ -105,8 +115,13 @@ public class HomeManager extends HomeManagerAbstract {
                 } catch (AlreadySubscribed e) {
                 } catch (BadQoS e) {
                 }
-
+                subscribedToLog = false;
+                subscribed = true;
+                
             } else {
+                if (subscribedToLog && subscribed) {
+                    return;
+                }
                 // Subscribe to Temperature Secondly
                 tempWarningTopic.unsubscribe(tempWarningSubscriber);
                 
@@ -122,6 +137,8 @@ public class HomeManager extends HomeManagerAbstract {
                 } catch (BadQoS e) {
                 }
                 
+                subscribedToLog = true;
+                subscribed = true;
             }
         }
     }
@@ -139,7 +156,8 @@ public class HomeManager extends HomeManagerAbstract {
             }
             
             if (value != 22 && !areAllOccupantsAway()) {
-                (new TemperatureAdjustment(value, userLocations)).start();
+                logData.add(new AdjustmentLogData(value, userLocations));
+                (new TemperatureAdjustment()).start();
             }
         }
     }
@@ -155,7 +173,8 @@ public class HomeManager extends HomeManagerAbstract {
             if (adjustingTemperature) {
                 return;
             }
-            (new TemperatureAdjustment(value, userLocations)).start();
+            logData.add(new AdjustmentLogData(value, userLocations));            
+            (new TemperatureAdjustment()).start();
         }
     }
 
@@ -413,9 +432,8 @@ public class HomeManager extends HomeManagerAbstract {
 
         // Give Sensors a chance to receive shutdown message
         try {
-            Thread.sleep(1000);
+            Thread.sleep(1500);
         } catch (InterruptedException e) {
-            e.printStackTrace();
         }
 
         shutdownTopic.destroy();

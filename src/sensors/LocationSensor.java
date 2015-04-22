@@ -42,8 +42,8 @@ public class LocationSensor extends SensorAbstract {
         while (!communicator().isShutdown()) {
             try {
                 String[] data = readData().split(",");
-                String value = data[0];
-                int time = Integer.parseInt(data[1]);
+                String value = data[0].trim();
+                int time = Integer.parseInt(data[1].trim());
                 for (int i = 0; i <= time; i++) {
                     if (communicator().isShutdown()) {
                         break;

@@ -54,7 +54,6 @@ public class AdjustmentLogData {
                 sb.append(name);
             }
         }
-
         return sb.toString();
     }
 

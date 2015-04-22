@@ -50,8 +50,8 @@ public class TemperatureSensor extends SensorAbstract {
         while (!communicator().isShutdown()) {
             try {
                 String[] data = readData().split(",");
-                int value = Integer.parseInt(data[0]);
-                int time = Integer.parseInt(data[1]);
+                int value = Integer.parseInt(data[0].trim());
+                int time = Integer.parseInt(data[1].trim());
                 for (int i = 0; i <= time; i++) {
                     if (communicator().isShutdown()) {
                         break;
@@ -59,8 +59,8 @@ public class TemperatureSensor extends SensorAbstract {
                     tempSensor.logData(value);
                     if ((value < 15 || value > 28) && value != preValue) {
                         tempSensorWarning.temperatureAlert(value);
-                        preValue = value;
                     }
+                    preValue = value;
                     Thread.sleep(1000);
                 }
             } catch (IOException e) {

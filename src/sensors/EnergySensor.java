@@ -41,8 +41,8 @@ public class EnergySensor extends SensorAbstract {
         while (!communicator().isShutdown()) {
             try {
                 String[] data = readData().split(",");
-                int value = Integer.parseInt(data[0]);
-                int time = Integer.parseInt(data[1]);
+                int value = Integer.parseInt(data[0].trim());
+                int time = Integer.parseInt(data[1].trim());
                 for (int i = 0; i <= time; i++) {
                     if (communicator().isShutdown()) {
                         break;
