@@ -1,2 +1,4 @@
-home,60
-away,60
+home,5
+away,5
+home,5
+away,5

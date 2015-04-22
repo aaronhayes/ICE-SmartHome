@@ -1,6 +1,4 @@
-home,20
+home,10
 away,10
-home,15
+home,10
 away,10
-home,5
-away,15
